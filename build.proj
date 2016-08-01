@@ -1,95 +1,58 @@
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <UsingTask TaskName="DownloadNuGet" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+	<ParameterGroup>
+	  <OutputFilename ParameterType="System.String" Required="true" />
+	</ParameterGroup>
+	<Task>
+	  <Reference Include="System.Core" />
+	  <Using Namespace="System" />
+	  <Using Namespace="System.IO" />
+	  <Using Namespace="System.Net" />
+	  <Using Namespace="Microsoft.Build.Framework" />
+	  <Using Namespace="Microsoft.Build.Utilities" />
+	  <Code Type="Fragment" Language="cs">
+		<![CDATA[
+                try {
+                    OutputFilename = Path.GetFullPath(OutputFilename);
+
+                    Log.LogMessage("Downloading latest version of NuGet.exe...");
+                    WebClient webClient = new WebClient();
+                    webClient.DownloadFile("https://nuget.org/nuget.exe", OutputFilename);
+
+                    return true;
+                }
+                catch (Exception ex) {
+                    Log.LogErrorFromException(ex);
+                    return false;
+                }
+            ]]>
+	  </Code>
+	</Task>
+  </UsingTask>
+
   <PropertyGroup>
-    <Configuration>Release</Configuration>
-    <!--<Configuration>Debug</Configuration>-->
-    <Platform>AnyCPU</Platform>
+	<NuGetToolsPath Condition=" '$(NuGetToolsPath)' == '' ">$(SolutionDir)\.nuget</NuGetToolsPath>
+	<NuGetExePath Condition=" '$(NuGetExePath)' == '' ">$(NuGetToolsPath)\nuget.exe</NuGetExePath>
+	<PackagePath>$([System.IO.Path]::Combine($(SolutionDir), "nupkg"))</PackagePath>
+	<BuildDependsOn Condition="'$(Configuration)' == 'Release'">
+	  $(BuildDependsOn);
+	  Package
+	</BuildDependsOn>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DefineConstants>TRACE</DefineConstants>
-  </PropertyGroup>
-
-  <Target Name="Clean" DependsOnTargets="CleanProjects">
+  <Target Name="DownloadNuGet">
+	<DownloadNuGet OutputFileName="$(NuGetExePath)" />
   </Target>
 
-  <Target Name="CleanProjects">
-    <ItemGroup>
-      <CleanFiles Include="**/*.dll" />
-      <CleanFiles Include="**/*.pdb" />
-      <CleanFiles Include="**/*.exe" />
-      <CleanFiles Include="**/*.msi" />
-      <CleanFiles Include="**/*.*~" />
-      <CleanFiles Include="**/*.db" />
-      <CleanFiles Include="**/*.log" />
-      <CleanFiles Include="**/*.aux" />
-      <CleanFiles Include="**/*.pdf" />
-      <CleanFiles Include="**/*.out" />
-      <CleanFiles Include="**/*.toc" />
-      <CleanFiles Include="**/*.1" />
-      <CleanFiles Include="**/*.2" />
-      <CleanFiles Include="**/*.3" />
-      <CleanFiles Include="**/*.4" />
-      <CleanFiles Include="**/*.mdf" />
-      <CleanFiles Include="**/*.ldf" />
-      <CleanFiles Include="**/*.ncb" />
-      <CleanFiles Include="**/*.dbg" />
-      <CleanFiles Include="**/*.xbap" />
-      <CleanFiles Include="**/*.nupkg" />
-      <CleanDirectories Include="*/*.csproj" />
-    </ItemGroup>
-
-    <MSBuild Projects="Meleze.sln" Targets="Clean" Properties="Configuration=Release;Platform=Any CPU" />
-    <MSBuild Projects="Meleze.sln" Targets="Clean" Properties="Configuration=Debug;Platform=Any CPU" />
-
-    <Delete Files="@(CleanFiles)" TreatErrorsAsWarnings="true" />
-
-    <RemoveDir Directories="%(CleanDirectories.rootdir)%(CleanDirectories.directory)bin" />
-    <RemoveDir Directories="%(CleanDirectories.rootdir)%(CleanDirectories.directory)obj" />
-
-    <RemoveDir Directories="TestResults" />
-    <RemoveDir Directories="tmp" />
-  </Target>
-
-  <Target Name="Backup" DependsOnTargets="Clean">
-    <Exec Command="&quot;C:\Program Files\7-Zip\7z.exe&quot; a -pMeleze -mx9 -r ..\Meleze.7z *.* -x!*.swp -xr!.git\*" />
-  </Target>
-
-  <Target Name="FullBackup" DependsOnTargets="Clean">
-    <Exec Command="&quot;C:\Program Files\7-Zip\7z.exe&quot; a -pMeleze -mx9 -r ..\Meleze.7z *.* -x!*.swp" />
-  </Target>
-
-  <Target Name="Dlls">
-    <MSBuild Projects="Meleze.Web/Meleze.Web.csproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(Platform);DefineConstants=$(DefineConstants)" />
-    <MSBuild Projects="Meleze.Web4/Meleze.Web4.csproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=$(Platform);DefineConstants=$(DefineConstants)" />
-  </Target>
-  
-  <Target Name="Package">
-    <RemoveDir Directories="tmp" />
-    <MakeDir Directories="tmp" />
-    <MakeDir Directories="tmp/lib" />
-    <MakeDir Directories="tmp/lib/NET40" />
-    <MakeDir Directories="tmp/content" />
-    <MakeDir Directories="tmp/content/Views" />
-    <MakeDir Directories="tmp/App_Readme" />
-
-    <!--<Copy SourceFiles="web.config.transform" DestinationFolder="tmp/content/Views" />-->
-
-    <Copy SourceFiles="cestdumeleze3.nuspec" DestinationFiles="tmp/cestdumeleze.nuspec" />
-    <Copy SourceFiles="README" DestinationFiles="tmp/App_Readme/Meleze.Web.README.txt" />
-    <Copy SourceFiles="Meleze.Web/bin/$(Configuration)/Meleze.Web.dll" DestinationFolder="tmp/lib/NET40" />
-    <Exec Command="&quot;C:\Projects\Tools\NuGet.exe&quot; pack tmp\cestdumeleze.nuspec" />
-
-    <Copy SourceFiles="cestdumeleze4.nuspec" DestinationFiles="tmp/cestdumeleze.nuspec" />
-    <Copy SourceFiles="web.config.transform" DestinationFolder="tmp/content" />
-    <Copy SourceFiles="Meleze.Web4/bin/$(Configuration)/Meleze.Web.dll" DestinationFolder="tmp/lib/NET40" />
-    <Exec Command="&quot;C:\Projects\Tools\NuGet.exe&quot; pack tmp\cestdumeleze.nuspec" />
-
-  </Target>
-
-  <Target Name="Build" DependsOnTargets="Dlls;Package">
+  <Target Name="Package" DependsOnTargets="DownloadNuGet">
+	<RemoveDir Directories="$(PackagePath)/lib"/>
+	<MakeDir Directories="$(PackagePath)/lib" />
+    <MakeDir Directories="$(PackagePath)/lib/NET45" />
+    
+    <Copy SourceFiles="$(OutputPath)/Meleze.Web.dll" DestinationFolder="$(PackagePath)/lib/NET45" />
+    <Exec Command="$(NuGetExePath) pack $(PackagePath)/cestdumeleze-vHalfNext.nuspec -OutputDirectory $(PackagePath)" />
+	
+	<RemoveDir Directories="$(PackagePath)/tmp"/>
   </Target>
 </Project>

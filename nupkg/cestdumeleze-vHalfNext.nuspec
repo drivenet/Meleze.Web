@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<package>
+  <metadata>
+    <id>Meleze.Web</id>
+    <version>1.4.551</version>
+    <authors>Nicolas Moyère, radischevo</authors>
+    <description>
+      This package contains the version of Meleze.Web built against the "half-vNext" version of ASP.NET MVC. 
+	  Meleze.Web is a toolbox to optimize ASP.NET MVC applications.
+      It provides HTML, JS and CSS minification of Razor views and caching of the returned pages.
+
+      For ASP.NET MVC 3.0-5.0 please use the original package.
+    </description>
+	<summary>This package contains the "half-vNext" version of Meleze.Web -- a toolbox to optimize ASP.NET MVC applications.</summary>
+    <projectUrl>https://github.com/drivenet/Meleze.Web</projectUrl>
+    <licenseUrl>https://raw.github.com/drivenet/Meleze.Web/master/license.txt</licenseUrl>
+    <tags>ASP.NET-MVC MVC MVC3 MVC4 MV5 Razor HTML compression minification minify javascript js css</tags>
+	<dependencies>
+	  <dependency id="Microsoft.AspNet.Mvc-vHalfNext" version="[5.5.10, 5.6.0)" />
+	</dependencies>
+  </metadata>
+</package>
